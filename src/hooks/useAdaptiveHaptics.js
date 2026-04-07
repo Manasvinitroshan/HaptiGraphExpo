@@ -20,6 +20,7 @@ import interactionLogger from '../ml/interactionLogger';
 import banditModel from '../ml/banditModel';
 import { computeReward } from '../ml/rewardModel';
 import { buildHapticSequence, playHapticEvent } from '../utils/hapticEngine';
+import soundEngine from '../utils/soundEngine';
 
 export default function useAdaptiveHaptics() {
 
@@ -67,11 +68,23 @@ export default function useAdaptiveHaptics() {
 
       playHapticEvent(adaptiveEvent);
 
+      // Play sound in sync with haptic — feature landmarks get arpeggios,
+      // baseline points get a tone pitched to the bandit arm
+      if (adaptiveEvent.feature) {
+        soundEngine.playFeature(adaptiveEvent.feature);
+      } else {
+        soundEngine.playTone({
+          toneFreq: adaptiveEvent.action?.toneFreq ?? 392,
+          toneVol:  adaptiveEvent.action?.toneVol  ?? 0.5,
+          toneWave: adaptiveEvent.action?.toneWave ?? 'sine',
+          delay:    adaptiveEvent.delay,
+        });
+      }
+
       // Record action for reward update later
       sessionActionsRef.current.push({
         stateKey:  adaptiveEvent.stateKey,
         actionIdx: adaptiveEvent.actionIdx,
-        action:    adaptiveEvent.action,
       });
 
       indexRef.current = i;
@@ -169,14 +182,14 @@ export default function useAdaptiveHaptics() {
     // Build dominant state/action summary for logging
     const stateCounts  = {};
     const actionCounts = [0, 0, 0];
-    for (const { stateKey, actionIdx, action } of sessionActionsRef.current) {
+    for (const { stateKey, actionIdx } of sessionActionsRef.current) {
       stateCounts[stateKey] = (stateCounts[stateKey] ?? 0) + 1;
       actionCounts[actionIdx]++;
     }
     const dominantStateKey  = Object.entries(stateCounts).sort((a,b) => b[1]-a[1])[0]?.[0] ?? 'low_flat';
     const dominantActionIdx = actionCounts.indexOf(Math.max(...actionCounts));
-    const dominantAction    = sessionActionsRef.current.find((s) => s.actionIdx === dominantActionIdx)?.action
-      ?? { intensity: 1.0, frequency: 150, duration: 80 };
+    const { ACTIONS } = require('../ml/banditModel');
+    const dominantAction = ACTIONS[dominantActionIdx] ?? { intensity: 1.0, frequency: 150, duration: 80 };
     const [slopeBucket, curvBucket] = dominantStateKey.split('_');
 
     interactionLogger.logInteraction({

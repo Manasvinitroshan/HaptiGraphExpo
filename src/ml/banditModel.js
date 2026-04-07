@@ -47,9 +47,12 @@ const Q_INIT = 0.5;
  * directly (that is determined by the device haptic engine).
  */
 export const ACTIONS = [
-  { intensity: 0.5, frequency: 100, hapticType: 'impactLight',  delay: 160, duration: 40  },
-  { intensity: 1.0, frequency: 150, hapticType: 'impactMedium', delay: 90,  duration: 80  },
-  { intensity: 1.5, frequency: 200, hapticType: 'impactHeavy',  delay: 35,  duration: 120 },
+  // arm 0 — light:  C4 261 Hz, gentle tone
+  { intensity: 0.5, frequency: 100, hapticType: 'impactLight',  delay: 160, duration: 40,  toneFreq: 261, toneVol: 0.35, toneWave: 'sine' },
+  // arm 1 — medium: G4 392 Hz, mid tone
+  { intensity: 1.0, frequency: 150, hapticType: 'impactMedium', delay: 90,  duration: 80,  toneFreq: 392, toneVol: 0.55, toneWave: 'sine' },
+  // arm 2 — heavy:  C5 523 Hz, bright tone
+  { intensity: 1.5, frequency: 200, hapticType: 'impactHeavy',  delay: 35,  duration: 120, toneFreq: 523, toneVol: 0.75, toneWave: 'sine' },
 ];
 
 export const NUM_ACTIONS = ACTIONS.length;

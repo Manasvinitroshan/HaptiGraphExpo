@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -7,9 +7,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import AudioEngine from '../components/AudioEngine';
 import GraphVisualizer from '../components/GraphVisualizer';
 import HapticController from '../components/HapticController';
 import useAdaptiveHaptics from '../hooks/useAdaptiveHaptics';
+import soundEngine from '../utils/soundEngine';
 
 const CONFIDENCE_OPTIONS = [
   { label: 'Not sure', value: 0.2 },
@@ -18,11 +20,23 @@ const CONFIDENCE_OPTIONS = [
 ];
 
 export default function LearningScreen({ equation, graphData, onBack }) {
-  const haptics = useAdaptiveHaptics();
+  const haptics    = useAdaptiveHaptics();
+  const audioRef   = useRef(null);
+  const [muted,      setMuted]      = useState(false);
+
+  useEffect(() => {
+    soundEngine.setRef(audioRef.current);
+  }, []);
 
   const [guess,      setGuess]      = useState('');
   const [confidence, setConfidence] = useState(null);
   const [submitted,  setSubmitted]  = useState(false);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    soundEngine.setMuted(next);
+  };
 
   const peaks         = graphData?.features?.peaks?.length ?? 0;
   const valleys       = graphData?.features?.valleys?.length ?? 0;
@@ -54,15 +68,27 @@ export default function LearningScreen({ equation, graphData, onBack }) {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled">
 
+      {/* Hidden audio engine — must be mounted for soundEngine to work */}
+      <AudioEngine engineRef={audioRef} />
+
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
-          onPress={onBack}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Back to home">
-          <Text style={styles.backText}>← Back</Text>
-        </Pressable>
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={onBack}
+            style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Back to home">
+            <Text style={styles.backText}>← Back</Text>
+          </Pressable>
+          <Pressable
+            onPress={toggleMute}
+            style={({ pressed }) => [styles.muteBtn, pressed && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityLabel={muted ? 'Unmute sound' : 'Mute sound'}>
+            <Text style={styles.muteBtnText}>{muted ? '🔇' : '🔊'}</Text>
+          </Pressable>
+        </View>
         <Text style={styles.title}>Learning Session</Text>
         <Text style={styles.subtitle}>{equation}</Text>
       </View>
@@ -257,6 +283,9 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: '#0f1117' },
   container: { padding: 20, paddingTop: 48, gap: 20 },
   header: { gap: 4 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  muteBtn: { padding: 8 },
+  muteBtnText: { fontSize: 20 },
   backBtn: { alignSelf: 'flex-start', paddingVertical: 6, paddingRight: 12, marginBottom: 8 },
   backBtnPressed: { opacity: 0.5 },
   backText: { color: '#4f9eff', fontSize: 15, fontWeight: '600' },
