@@ -69,12 +69,23 @@ export default function useAdaptiveHaptics() {
       playHapticEvent(adaptiveEvent);
 
       // Play sound in sync with haptic — feature landmarks get arpeggios,
-      // baseline points get a tone pitched to the bandit arm
+      // baseline points get a pitch driven by slope magnitude:
+      //   |slope| ≈ 0  →  low pitch  (~150 Hz)
+      //   |slope| ≥ 10 →  high pitch (~900 Hz)
       if (adaptiveEvent.feature) {
         soundEngine.playFeature(adaptiveEvent.feature);
       } else {
+        const slopeAbs  = Math.abs(event.slope ?? 0);
+        const MIN_FREQ  = 150;
+        const MAX_FREQ  = 900;
+        const MAX_SLOPE = 10;
+        const t         = Math.min(slopeAbs / MAX_SLOPE, 1);
+        // Logarithmic interpolation so low-slope changes are perceptible
+        const slopeFreq = Math.round(
+          MIN_FREQ * Math.pow(MAX_FREQ / MIN_FREQ, t),
+        );
         soundEngine.playTone({
-          toneFreq: adaptiveEvent.action?.toneFreq ?? 392,
+          toneFreq: slopeFreq,
           toneVol:  adaptiveEvent.action?.toneVol  ?? 0.5,
           toneWave: adaptiveEvent.action?.toneWave ?? 'sine',
           delay:    adaptiveEvent.delay,
