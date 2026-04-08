@@ -5,16 +5,26 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import HomeScreen from './src/screens/HomeScreen';
 import LearningScreen from './src/screens/LearningScreen';
+import SplashScreen from './src/screens/SplashScreen';
 import useGraphLearning from './src/hooks/useGraphLearning';
 
 export default function App() {
-  const [screen, setScreen] = useState('home');
+  const [screen, setScreen] = useState('splash');
   const graphLearning = useGraphLearning();
 
   const handleStart = () => {
     const ready = graphLearning.generateGraphSession();
     if (ready) setScreen('learning');
   };
+
+  if (screen === 'splash') {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <SplashScreen onFinish={() => setScreen('home')} />
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>

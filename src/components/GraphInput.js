@@ -29,6 +29,7 @@ import {
   View,
 } from 'react-native';
 import { parseEquation } from '../utils/graphParser';
+import HapticLegend from './HapticLegend';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -381,6 +382,9 @@ export default function GraphInput({ equation, onChangeEquation, onSubmit }) {
             </Text>
           )}
         </Pressable>
+
+        {/* ── Haptic & sound feedback key ───────────────────────────────── */}
+        <HapticLegend />
 
       </View>
     </TouchableWithoutFeedback>
