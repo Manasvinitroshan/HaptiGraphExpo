@@ -1,11 +1,11 @@
 
 import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AudioEngine from '../components/AudioEngine';
 import GraphInput from '../components/GraphInput';
 import soundEngine from '../utils/soundEngine';
 
-export default function HomeScreen({ equation, setEquation, onStart, isLoading, onDrawMode, onDrawMode }) {
+export default function HomeScreen({ equation, setEquation, onStart, isLoading, onDrawMode }) {
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -29,15 +29,6 @@ export default function HomeScreen({ equation, setEquation, onStart, isLoading, 
           onSubmit={onStart}
           isLoading={isLoading}
         />
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
-        <View style={styles.dividerLine} />
-      </View>
-      <TouchableOpacity style={styles.drawBtn} onPress={onDrawMode}>
-        <Text style={styles.drawBtnText}>✏️  Draw a Function</Text>
-        <Text style={styles.drawBtnSub}>Sketch a curve and let the model classify it</Text>
-      </TouchableOpacity>
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>or</Text>
