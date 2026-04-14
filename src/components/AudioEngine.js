@@ -104,6 +104,13 @@ function playFeature(type) {
 
   } else if (type === 'zeroCrossing') {
     playTone(440, 0.40, 45, 'triangle');
+
+  } else if (type === 'asymptote') {
+    // Rising alarm — rapid ascending sawtooth tones signal "wall ahead"
+    playTone(330, 0.50, 55, 'sawtooth');
+    setTimeout(function(){ playTone(415, 0.60, 55, 'sawtooth'); }, 55);
+    setTimeout(function(){ playTone(523, 0.70, 55, 'sawtooth'); }, 110);
+    setTimeout(function(){ playTone(659, 0.80, 90, 'sawtooth'); }, 165);
   }
 }
 

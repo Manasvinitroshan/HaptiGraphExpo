@@ -113,6 +113,15 @@ const SECTIONS = [
           soundEngine.playFeature('zeroCrossing');
         },
       },
+      {
+        icon: '🚧',
+        label: 'Asymptote',
+        detail: 'Function → ±∞',
+        preview: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          soundEngine.playFeature('asymptote');
+        },
+      },
     ],
   },
 ];

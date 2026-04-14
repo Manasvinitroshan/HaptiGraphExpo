@@ -42,16 +42,18 @@ const PAD = { top: 20, right: 20, bottom: 36, left: 44 };
 // ─── Colour Palette ───────────────────────────────────────────────────────────
 
 const COLORS = {
-  background:    '#0f1117',
-  axes:          '#3a3f55',
-  gridLine:      '#1e2235',
-  curve:         '#4f9eff',
-  curveGradient: '#a259ff',
-  peak:          '#ff4f4f',
-  valley:        '#4faaff',
-  zeroCrossing:  '#4fff91',
-  label:         '#7a8099',
-  axisLabel:     '#c5cae9',
+  background:         '#0f1117',
+  axes:               '#3a3f55',
+  gridLine:           '#1e2235',
+  curve:              '#4f9eff',
+  curveGradient:      '#a259ff',
+  peak:               '#ff4f4f',
+  valley:             '#4faaff',
+  zeroCrossing:       '#4fff91',
+  asymptoteVertical:  '#ff8f4f',
+  asymptoteHorizontal:'#ff4fa0',
+  label:              '#7a8099',
+  axisLabel:          '#c5cae9',
 };
 
 // ─── Scaling Utilities ────────────────────────────────────────────────────────
@@ -215,6 +217,50 @@ const Axes = React.memo(({ domain, svgW, svgH, scaleX, scaleY }) => {
   );
 });
 
+/** Renders dashed vertical and horizontal asymptote lines */
+const AsymptoteLines = React.memo(({ asymptotes, scaleX, scaleY, svgW, svgH, domain }) => {
+  if (!asymptotes) return null;
+  const { vertical = [], horizontal = [] } = asymptotes;
+  return (
+    <>
+      {vertical.map((a, i) => {
+        const px = scaleX(a.x);
+        if (px < 0 || px > svgW) return null;
+        return (
+          <React.Fragment key={`va${i}`}>
+            <Line
+              x1={px} y1={0} x2={px} y2={svgH}
+              stroke={COLORS.asymptoteVertical}
+              strokeWidth={1.5}
+              strokeDasharray="5,4"
+              opacity={0.8} />
+            <SvgText x={px + 4} y={10} fontSize={8} fill={COLORS.asymptoteVertical}>
+              x={a.x}
+            </SvgText>
+          </React.Fragment>
+        );
+      })}
+      {horizontal.map((a, i) => {
+        if (a.y < domain.yMin || a.y > domain.yMax) return null;
+        const py = scaleY(a.y);
+        return (
+          <React.Fragment key={`ha${i}`}>
+            <Line
+              x1={0} y1={py} x2={svgW} y2={py}
+              stroke={COLORS.asymptoteHorizontal}
+              strokeWidth={1.5}
+              strokeDasharray="5,4"
+              opacity={0.8} />
+            <SvgText x={svgW - 4} y={py - 4} fontSize={8} fill={COLORS.asymptoteHorizontal} textAnchor="end">
+              y={a.y}
+            </SvgText>
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+});
+
 /** Renders annotated feature dots with labels */
 const FeatureDots = React.memo(({ peaks, valleys, zeroCrossings, scaleX, scaleY }) => (
   <>
@@ -352,9 +398,11 @@ const GraphVisualizer = React.memo(({
   }
 
   // ── Legend ─────────────────────────────────────────────────────────────────
-  const peakCount = data.features?.peaks?.length ?? 0;
+  const peakCount  = data.features?.peaks?.length ?? 0;
   const valleyCount = data.features?.valleys?.length ?? 0;
-  const zcCount = data.features?.zeroCrossings?.length ?? 0;
+  const zcCount    = data.features?.zeroCrossings?.length ?? 0;
+  const vaCount    = data.features?.asymptotes?.vertical?.length ?? 0;
+  const haCount    = data.features?.asymptotes?.horizontal?.length ?? 0;
 
   return (
     <View style={[styles.container, { width, height: height + 32 }]}>
@@ -398,6 +446,17 @@ const GraphVisualizer = React.memo(({
               strokeLinejoin="round" />
           )}
 
+          {/* Asymptote lines */}
+          {showFeatures && (
+            <AsymptoteLines
+              asymptotes={data.features?.asymptotes}
+              scaleX={scaleX}
+              scaleY={scaleY}
+              svgW={svgW}
+              svgH={svgH}
+              domain={domain} />
+          )}
+
           {/* Feature annotations */}
           {showFeatures && (
             <FeatureDots
@@ -418,9 +477,11 @@ const GraphVisualizer = React.memo(({
       {/* Legend row */}
       {showFeatures && (
         <View style={styles.legend}>
-          <LegendItem color={COLORS.peak}         label={`${peakCount} peak${peakCount !== 1 ? 's' : ''}`} />
-          <LegendItem color={COLORS.valley}       label={`${valleyCount} valle${valleyCount !== 1 ? 'ys' : 'y'}`} />
-          <LegendItem color={COLORS.zeroCrossing} label={`${zcCount} zero crossing${zcCount !== 1 ? 's' : ''}`} />
+          <LegendItem color={COLORS.peak}                label={`${peakCount} peak${peakCount !== 1 ? 's' : ''}`} />
+          <LegendItem color={COLORS.valley}              label={`${valleyCount} valle${valleyCount !== 1 ? 'ys' : 'y'}`} />
+          <LegendItem color={COLORS.zeroCrossing}        label={`${zcCount} zero crossing${zcCount !== 1 ? 's' : ''}`} />
+          {vaCount > 0 && <LegendItem color={COLORS.asymptoteVertical}   label={`${vaCount} vert. asymptote${vaCount !== 1 ? 's' : ''}`} dashed />}
+          {haCount > 0 && <LegendItem color={COLORS.asymptoteHorizontal} label={`${haCount} horiz. asymptote${haCount !== 1 ? 's' : ''}`} dashed />}
         </View>
       )}
     </View>
@@ -429,9 +490,13 @@ const GraphVisualizer = React.memo(({
 
 // ─── Legend Item ──────────────────────────────────────────────────────────────
 
-const LegendItem = ({ color, label }) => (
+const LegendItem = ({ color, label, dashed = false }) => (
   <View style={styles.legendItem}>
-    <View style={[styles.legendDot, { backgroundColor: color }]} />
+    {dashed ? (
+      <View style={[styles.legendDash, { borderColor: color }]} />
+    ) : (
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+    )}
     <Text style={styles.legendLabel}>{label}</Text>
   </View>
 );
@@ -469,6 +534,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  legendDash: {
+    width: 14,
+    height: 0,
+    borderTopWidth: 2,
+    borderStyle: 'dashed',
   },
   legendLabel: {
     color: COLORS.label,

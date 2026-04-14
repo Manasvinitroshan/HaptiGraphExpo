@@ -87,6 +87,7 @@ export const FEATURE_PATTERNS = {
   peak:         'notificationSuccess',
   valley:       'notificationWarning',
   zeroCrossing: 'selection',
+  asymptote:    'notificationError',
 };
 
 // ─── Playback Tuning ──────────────────────────────────────────────────────────
