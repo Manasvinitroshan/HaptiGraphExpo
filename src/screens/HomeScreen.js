@@ -1,11 +1,11 @@
 
 import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AudioEngine from '../components/AudioEngine';
 import GraphInput from '../components/GraphInput';
 import soundEngine from '../utils/soundEngine';
 
-export default function HomeScreen({ equation, setEquation, onStart, isLoading }) {
+export default function HomeScreen({ equation, setEquation, onStart, isLoading, onDrawMode }) {
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -29,6 +29,15 @@ export default function HomeScreen({ equation, setEquation, onStart, isLoading }
           onSubmit={onStart}
           isLoading={isLoading}
         />
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+        <TouchableOpacity style={styles.drawBtn} onPress={onDrawMode}>
+          <Text style={styles.drawBtnText}>✏️  Draw a Function</Text>
+          <Text style={styles.drawBtnSub}>Sketch a curve and let the model classify it</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -65,4 +74,21 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     color: '#9fa8c0',
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 28,
+    gap: 12,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#2a2f45' },
+  dividerText: { color: '#3a3f52', fontSize: 13 },
+  drawBtn: {
+    backgroundColor: '#161b2e',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#2a2f45',
+    padding: 20,
+  },
+  drawBtnText: { fontSize: 17, fontWeight: '700', color: '#e8eaf6', marginBottom: 4 },
+  drawBtnSub: { fontSize: 13, color: '#9fa8c0' },
 });

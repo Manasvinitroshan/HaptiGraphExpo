@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import DrawScreen from './src/screens/DrawScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import LearningScreen from './src/screens/LearningScreen';
 import SplashScreen from './src/screens/SplashScreen';
@@ -31,19 +32,24 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <StatusBar style="light" />
 
-        {screen === 'home' ? (
+        {screen === 'home' && (
           <HomeScreen
             equation={graphLearning.equation}
             setEquation={graphLearning.setEquation}
             onStart={handleStart}
             isLoading={graphLearning.isLoading}
+            onDrawMode={() => setScreen('draw')}
           />
-        ) : (
+        )}
+        {screen === 'learning' && (
           <LearningScreen
             equation={graphLearning.equation}
             graphData={graphLearning.graphData}
             onBack={() => setScreen('home')}
           />
+        )}
+        {screen === 'draw' && (
+          <DrawScreen onBack={() => setScreen('home')} />
         )}
       </SafeAreaView>
     </SafeAreaProvider>
