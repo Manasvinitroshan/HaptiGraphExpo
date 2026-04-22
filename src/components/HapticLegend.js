@@ -1,13 +1,50 @@
 /**
  * HapticLegend.js
  *
- * Interactive feedback key — tap any row to preview its haptic + sound.
+ * Interactive feedback key — tap any row to preview its haptic + sound for 5 s.
+ * Tap again to stop early. Each preview() returns a stop() cleanup function.
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import soundEngine from '../utils/soundEngine';
+
+const PREVIEW_DURATION = 5000;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Repeats fn every intervalMs, fires immediately. Returns stop(). */
+function loop(fn, intervalMs) {
+  fn();
+  const id = setInterval(fn, intervalMs);
+  return () => clearInterval(id);
+}
+
+/**
+ * Repeats a burst pattern every cycleMs.
+ * burstOffsets: array of ms offsets within a cycle to fire fn.
+ * Returns stop().
+ */
+function burstLoop(fn, burstOffsets, cycleMs) {
+  const timers = [];
+
+  function scheduleBurst() {
+    burstOffsets.forEach((offset) => {
+      timers.push(setTimeout(fn, offset));
+    });
+  }
+
+  scheduleBurst();
+  const id = setInterval(() => {
+    scheduleBurst();
+  }, cycleMs);
+
+  return () => {
+    clearInterval(id);
+    timers.forEach(clearTimeout);
+  };
+}
 
 // ─── Preview definitions ──────────────────────────────────────────────────────
 
@@ -20,28 +57,28 @@ const SECTIONS = [
         icon: '〰',
         label: 'Flat',
         detail: 'Gentle tap',
-        preview: () => {
+        preview: () => loop(() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           soundEngine.playTone({ toneFreq: 261, toneVol: 0.35, toneWave: 'sine', delay: 160 });
-        },
+        }, 160),
       },
       {
         icon: '📈',
         label: 'Slope',
         detail: 'Medium pulse',
-        preview: () => {
+        preview: () => loop(() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           soundEngine.playTone({ toneFreq: 392, toneVol: 0.5, toneWave: 'sine', delay: 90 });
-        },
+        }, 90),
       },
       {
         icon: '⚡',
         label: 'Steep',
         detail: 'Strong buzz',
-        preview: () => {
+        preview: () => loop(() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          soundEngine.playTone({ toneFreq: 523, toneVol: 0.7, toneWave: 'triangle', delay: 35 });
-        },
+          soundEngine.playTone({ toneFreq: 523, toneVol: 0.7, toneWave: 'triangle', delay: 75 });
+        }, 75),
       },
     ],
   },
@@ -53,32 +90,31 @@ const SECTIONS = [
         icon: '🐢',
         label: 'Slow',
         detail: '160 ms apart',
-        preview: () => {
-          const fire = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          fire();
-          setTimeout(fire, 160);
+        // 2-pulse burst then rest: fires at 0ms and 160ms, cycle every 700ms
+        preview: () => burstLoop(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           soundEngine.playTone({ toneFreq: 330, toneVol: 0.4, toneWave: 'sine', delay: 160 });
-        },
+        }, [0, 160], 700),
       },
       {
         icon: '🚶',
         label: 'Medium',
         detail: '90 ms apart',
-        preview: () => {
-          const fire = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          fire(); setTimeout(fire, 90); setTimeout(fire, 180);
+        // 3-pulse burst: 0, 90, 180ms, cycle every 650ms
+        preview: () => burstLoop(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           soundEngine.playTone({ toneFreq: 392, toneVol: 0.5, toneWave: 'sine', delay: 90 });
-        },
+        }, [0, 90, 180], 650),
       },
       {
         icon: '🏃',
         label: 'Rapid',
         detail: '35 ms apart',
-        preview: () => {
-          const fire = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          [0, 35, 70, 105].forEach(t => setTimeout(fire, t));
-          soundEngine.playTone({ toneFreq: 523, toneVol: 0.65, toneWave: 'square', delay: 35 });
-        },
+        // 4-pulse burst: 0, 50, 100, 150ms, cycle every 600ms
+        preview: () => burstLoop(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          soundEngine.playTone({ toneFreq: 523, toneVol: 0.65, toneWave: 'square', delay: 50 });
+        }, [0, 50, 100, 150], 600),
       },
     ],
   },
@@ -90,37 +126,37 @@ const SECTIONS = [
         icon: '🔔',
         label: 'Peak',
         detail: 'Local maximum',
-        preview: () => {
+        preview: () => loop(() => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           soundEngine.playFeature('peak');
-        },
+        }, 1200),
       },
       {
         icon: '⚠️',
         label: 'Valley',
         detail: 'Local minimum',
-        preview: () => {
+        preview: () => loop(() => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           soundEngine.playFeature('valley');
-        },
+        }, 1200),
       },
       {
         icon: '✦',
         label: 'Zero',
         detail: 'Crosses y = 0',
-        preview: () => {
+        preview: () => loop(() => {
           Haptics.selectionAsync();
           soundEngine.playFeature('zeroCrossing');
-        },
+        }, 900),
       },
       {
         icon: '🚧',
         label: 'Asymptote',
         detail: 'Function → ±∞',
-        preview: () => {
+        preview: () => loop(() => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           soundEngine.playFeature('asymptote');
-        },
+        }, 1500),
       },
     ],
   },
@@ -129,26 +165,75 @@ const SECTIONS = [
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
 function LegendRow({ icon, label, detail, preview }) {
-  const [active, setActive] = useState(false);
+  const [playing, setPlaying]   = useState(false);
+  const [progress, setProgress] = useState(0);  // 0–1 over 5 s
+  const stopRef    = useRef(null);
+  const autoStopRef = useRef(null);
+  const progressRef = useRef(null);
+
+  // Clean up on unmount
+  useEffect(() => () => stopAll(), []);
+
+  function stopAll() {
+    stopRef.current?.();
+    clearTimeout(autoStopRef.current);
+    clearInterval(progressRef.current);
+    stopRef.current    = null;
+    autoStopRef.current = null;
+    progressRef.current = null;
+  }
 
   function handlePress() {
-    setActive(true);
-    preview?.();
-    setTimeout(() => setActive(false), 300);
+    if (playing) {
+      stopAll();
+      setPlaying(false);
+      setProgress(0);
+      return;
+    }
+
+    // Start preview
+    stopRef.current = preview?.();
+    setPlaying(true);
+    setProgress(0);
+
+    // Tick progress bar every 50 ms
+    const start = Date.now();
+    progressRef.current = setInterval(() => {
+      const elapsed = Date.now() - start;
+      setProgress(Math.min(elapsed / PREVIEW_DURATION, 1));
+    }, 50);
+
+    // Auto-stop after 5 s
+    autoStopRef.current = setTimeout(() => {
+      stopAll();
+      setPlaying(false);
+      setProgress(0);
+    }, PREVIEW_DURATION);
   }
 
   return (
     <Pressable
       onPress={handlePress}
-      style={({ pressed }) => [styles.row, (pressed || active) && styles.rowActive]}
+      style={({ pressed }) => [styles.row, (pressed || playing) && styles.rowActive]}
       accessibilityRole="button"
-      accessibilityLabel={`Preview ${label} feedback`}>
+      accessibilityLabel={playing ? `Stop ${label} preview` : `Preview ${label} feedback for 5 seconds`}>
+
       <Text style={styles.rowIcon}>{icon}</Text>
+
       <View style={styles.rowText}>
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowDetail}>{detail}</Text>
+        {/* Progress bar — only visible while playing */}
+        {playing && (
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          </View>
+        )}
       </View>
-      <Text style={[styles.playHint, active && styles.playHintActive]}>▶</Text>
+
+      <Text style={[styles.playBtn, playing && styles.playBtnActive]}>
+        {playing ? '■' : '▶'}
+      </Text>
     </Pressable>
   );
 }
@@ -183,7 +268,7 @@ export default function HapticLegend() {
         accessibilityState={{ expanded: open }}>
         <Text style={styles.toggleIcon}>🎛</Text>
         <Text style={styles.toggleLabel}>Feedback Key</Text>
-        <Text style={styles.toggleHint}>tap to preview</Text>
+        <Text style={styles.toggleHint}>tap row to preview (5 s)</Text>
         <Animated.Text style={[styles.chevron, { transform: [{ rotate: chevronRotate }] }]}>
           ▾
         </Animated.Text>
@@ -266,11 +351,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 8,
   },
-  rowActive:      { backgroundColor: C.active },
-  rowIcon:        { fontSize: 18, width: 26, textAlign: 'center' },
-  rowText:        { flex: 1 },
-  rowLabel:       { fontSize: 13, fontWeight: '600', color: C.text },
-  rowDetail:      { fontSize: 11, color: C.textSub },
-  playHint:       { fontSize: 12, color: C.textMuted },
-  playHintActive: { color: C.primary },
+  rowActive:  { backgroundColor: C.active },
+  rowIcon:    { fontSize: 18, width: 26, textAlign: 'center' },
+  rowText:    { flex: 1 },
+  rowLabel:   { fontSize: 13, fontWeight: '600', color: C.text },
+  rowDetail:  { fontSize: 11, color: C.textSub, marginBottom: 3 },
+
+  progressTrack: {
+    height: 2,
+    backgroundColor: '#2e3248',
+    borderRadius: 1,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  progressFill: {
+    height: 2,
+    backgroundColor: C.primary,
+    borderRadius: 1,
+  },
+
+  playBtn:       { fontSize: 13, color: C.textMuted, width: 16, textAlign: 'center' },
+  playBtnActive: { color: C.primary },
 });
