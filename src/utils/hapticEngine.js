@@ -40,17 +40,15 @@ export function buildHapticSequence(graphData) {
   if (!graphData?.points?.length) return [];
 
   const { points, slope = [], curvature = [], features = {} } = graphData;
-  const { peaks = [], valleys = [], zeroCrossings = [], asymptotes = {} } = features;
-  const verticalAsymptotes = asymptotes.vertical ?? [];
+  const { peaks = [], valleys = [], zeroCrossings = [] } = features;
   const tol = PLAYBACK.featureMatchTolerance;
 
   const slopeMap     = new Map(slope.map((s) => [s.x, s.dy]));
   const curvatureMap = new Map(curvature.map((c) => [c.x, c.d2y]));
 
-  const peakXs      = peaks.map((p) => p.x);
-  const valleyXs    = valleys.map((v) => v.x);
-  const zeroXs      = zeroCrossings.map((z) => z.x);
-  const asymptoteXs = verticalAsymptotes.map((a) => a.x);
+  const peakXs   = peaks.map((p) => p.x);
+  const valleyXs = valleys.map((v) => v.x);
+  const zeroXs   = zeroCrossings.map((z) => z.x);
 
   const nearAny = (xs, x) => xs.some((fx) => Math.abs(fx - x) <= tol);
 
@@ -68,10 +66,9 @@ export function buildHapticSequence(graphData) {
     const baseDelay = curvatureToDelay(d2y);
 
     let featureKey;
-    if      (nearAny(asymptoteXs, x)) featureKey = 'asymptote';
-    else if (nearAny(peakXs,      x)) featureKey = 'peak';
-    else if (nearAny(valleyXs,    x)) featureKey = 'valley';
-    else if (nearAny(zeroXs,      x)) featureKey = 'zeroCrossing';
+    if      (nearAny(peakXs,   x)) featureKey = 'peak';
+    else if (nearAny(valleyXs, x)) featureKey = 'valley';
+    else if (nearAny(zeroXs,   x)) featureKey = 'zeroCrossing';
 
     sequence.push({
       type:      featureKey ? FEATURE_PATTERNS[featureKey] : baseType,
@@ -96,8 +93,7 @@ const EXPO_HAPTIC_MAP = {
   impactHeavy:         () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
   notificationSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
   notificationWarning: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
-  notificationError:   () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
-  selection:           () => Haptics.selectionAsync(),
+selection:           () => Haptics.selectionAsync(),
 };
 
 /**

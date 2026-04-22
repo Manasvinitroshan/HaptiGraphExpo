@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# project submission docs (not for repo)
+REPORT.md
+
 # Expo
 .expo/
 dist/

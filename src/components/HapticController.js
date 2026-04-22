@@ -95,10 +95,9 @@ export default function HapticController({ graphData, haptics }) {
 
       {/* ── Feature legend ───────────────────────────────────────────────── */}
       <View style={styles.legend}>
-        <LegendRow color={C.peak}      label="Peak — success pulse" />
-        <LegendRow color={C.valley}    label="Valley — warning pulse" />
-        <LegendRow color={C.zero}      label="Zero crossing — subtle tick" />
-        <LegendRow color={C.asymptote} label="Asymptote — rising alarm" />
+        <LegendRow color={C.peak}   label="Peak — success pulse" />
+        <LegendRow color={C.valley} label="Valley — warning pulse" />
+        <LegendRow color={C.zero}   label="Zero crossing — subtle tick" />
       </View>
 
     </View>
@@ -145,10 +144,9 @@ const C = {
   play:     '#4fff91',
   pause:    '#4f9eff',
   stop:     '#ff4f4f',
-  peak:      '#ff4f4f',
-  valley:    '#4faaff',
-  zero:      '#4fff91',
-  asymptote: '#ff8f4f',
+  peak:   '#ff4f4f',
+  valley: '#4faaff',
+  zero:   '#4fff91',
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────

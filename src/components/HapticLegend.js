@@ -149,15 +149,6 @@ const SECTIONS = [
           soundEngine.playFeature('zeroCrossing');
         }, 900),
       },
-      {
-        icon: '🚧',
-        label: 'Asymptote',
-        detail: 'Function → ±∞',
-        preview: () => loop(() => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          soundEngine.playFeature('asymptote');
-        }, 1500),
-      },
     ],
   },
 ];

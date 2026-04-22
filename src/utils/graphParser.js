@@ -313,81 +313,6 @@ function normalizeRange(values) {
   return values.map((v) => parseFloat((2 * (v - min) / range - 1).toFixed(6)));
 }
 
-// ─── Asymptote Detection ──────────────────────────────────────────────────────
-
-const STEP = (X_MAX - X_MIN) / STEPS; // ~0.1
-
-/**
- * Detects vertical and horizontal asymptotes from raw sampled points.
- *
- * Vertical asymptotes:
- *   1. Gap in rawPoints (consecutive x-distance > 1.5× step) with large |y|
- *      on both sides — the NaN zone indicates the function blows up.
- *   2. Consecutive valid points with a large sign-flipping jump in y.
- *
- * Horizontal asymptotes:
- *   Check whether y values converge (low variance) near the x boundaries.
- *
- * @param {{ x: number, y: number }[]} rawPoints  Already-validated sample points
- * @returns {{ vertical: {x}[], horizontal: {y}[] }}
- */
-function detectAsymptotes(rawPoints) {
-  const vertical   = [];
-  const horizontal = [];
-
-  // ── Vertical ──────────────────────────────────────────────────────────────
-  for (let i = 0; i < rawPoints.length - 1; i++) {
-    const a = rawPoints[i];
-    const b = rawPoints[i + 1];
-    const gap = b.x - a.x;
-
-    // Case 1: gap in samples — NaN region with large |y| on both sides
-    if (gap > STEP * 1.8 && Math.abs(a.y) > 5 && Math.abs(b.y) > 5) {
-      vertical.push({ x: parseFloat(((a.x + b.x) / 2).toFixed(4)) });
-      continue;
-    }
-
-    // Case 2: no gap but large sign-flip jump (function passes through ±∞)
-    const jump     = Math.abs(b.y - a.y);
-    const signFlip = (a.y > 0) !== (b.y > 0);
-    if (gap <= STEP * 1.8 && jump > 30 && signFlip) {
-      vertical.push({ x: parseFloat(((a.x + b.x) / 2).toFixed(4)) });
-    }
-  }
-
-  // Deduplicate vertical (merge asymptotes within 0.5 of each other)
-  const dedupedV = [];
-  for (const v of vertical) {
-    if (!dedupedV.some((d) => Math.abs(d.x - v.x) < 0.5)) dedupedV.push(v);
-  }
-
-  // ── Horizontal ────────────────────────────────────────────────────────────
-  const rightPts = rawPoints.filter((p) => p.x > 7.5);
-  const leftPts  = rawPoints.filter((p) => p.x < -7.5);
-
-  function limitValue(pts) {
-    if (pts.length < 4) return null;
-    const ys  = pts.map((p) => p.y);
-    const mean = ys.reduce((a, b) => a + b, 0) / ys.length;
-    const variance = ys.reduce((acc, y) => acc + (y - mean) ** 2, 0) / ys.length;
-    if (variance < 0.15 && Math.abs(mean) < 1e4) return parseFloat(mean.toFixed(3));
-    return null;
-  }
-
-  const rLimit = limitValue(rightPts);
-  const lLimit = limitValue(leftPts);
-
-  if (rLimit !== null && lLimit !== null && Math.abs(rLimit - lLimit) < 1) {
-    horizontal.push({ y: parseFloat(((rLimit + lLimit) / 2).toFixed(3)) });
-  } else if (rLimit !== null) {
-    horizontal.push({ y: rLimit });
-  } else if (lLimit !== null) {
-    horizontal.push({ y: lLimit });
-  }
-
-  return { vertical: dedupedV, horizontal };
-}
-
 // ─── Feature Detection ────────────────────────────────────────────────────────
 
 /**
@@ -540,10 +465,7 @@ export function parseEquationAdvanced(equation) {
   const points = rawPoints.map((p, i) => ({ ...p, normalizedY: normalizedYs[i] }));
 
   // ── 4. Detect graph features ──────────────────────────────────────────────
-  const features = {
-    ...detectFeatures(rawPoints),
-    asymptotes: detectAsymptotes(rawPoints),
-  };
+  const features = detectFeatures(rawPoints);
 
   return {
     points,
